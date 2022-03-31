@@ -7,16 +7,23 @@ import sokol.gfx
 import sokol.sgl
 import gx
 
+type DrawViewerFn = fn (dv &DrawViewerComponent)
+
 struct DrawViewerComponent {
-mut:
+pub mut:
 	id        string
 	layout    ui.CanvasLayout
 	alpha_pip sgl.Pipeline
+	pipdesc   C.sg_pipeline_desc
+	shapes    map[string]draw.Shape
+	on_draw   DrawViewerFn
 }
 
 pub struct DrawViewerParams {
 	id       string
 	bg_color gx.Color
+	shapes   map[string]draw.Shape
+	on_draw  DrawViewerFn = DrawViewerFn(0)
 }
 
 pub fn drawviewer_canvaslayout(p DrawViewerParams) &ui.CanvasLayout {
@@ -28,6 +35,7 @@ pub fn drawviewer_canvaslayout(p DrawViewerParams) &ui.CanvasLayout {
 	dvc := &DrawViewerComponent{
 		id: p.id
 		layout: layout
+		on_draw: p.on_draw
 	}
 	ui.component_connect(dvc, layout)
 	layout.on_init = dv_init
@@ -44,6 +52,12 @@ pub fn drawviewer_component_from_id(w ui.Window, id string) &DrawViewerComponent
 }
 
 fn dv_init(c &ui.CanvasLayout) {
+	mut dvc := drawviewer_component(c)
+	dvc.pipdesc = dv_init_alpha()
+	dvc.alpha_pip = sgl.make_pipeline(&dvc.pipdesc)
+}
+
+fn dv_init_alpha() C.sg_pipeline_desc {
 	desc := sapp.create_desc()
 	gfx.setup(&desc)
 	sgl_desc := C.sgl_desc_t{
@@ -61,85 +75,55 @@ fn dv_init(c &ui.CanvasLayout) {
 		}
 	}
 	pipdesc.colors[0] = color_state
-	mut dvc := drawviewer_component(c)
-	dvc.alpha_pip = sgl.make_pipeline(&pipdesc)
+	return pipdesc
 }
 
 fn dv_draw(c &ui.CanvasLayout, state voidptr) {
-	bs := f32(1)
-	size_w := f32(100)
-	size_h := f32(100)
 	dvc := drawviewer_component(c)
 	sgl.load_pipeline(dvc.alpha_pip)
-
-	wb := draw.Shape{
-		scale: bs
-		// connect: .round
+	if dvc.on_draw != DrawViewerFn(0) {
+		dvc.on_draw(dvc)
 	}
-	mut wbr := draw.Shape{
-		scale: bs
-		connect: .round //.miter //.round //.bevel
-		radius: 4.5
-		colors: draw.Colors{draw.rgba(0, 0, 0, 127), draw.rgba(255, 255, 255, 127)}
-	}
-
-	grey_blue := draw.Shape{
-		scale: bs
-		colors: draw.Colors{draw.rgb(127, 127, 127), draw.rgb(0, 0, 127)}
-	}
-
-	thick_line := draw.Shape{
-		scale: bs
-		radius: 4
-		colors: draw.Colors{draw.rgba(0, 127, 25, 127), draw.rgba(0, 127, 25, 127)}
-	}
-
-	// dbgf := if a.d.all(.draw) { draw.Fill.debug } else { draw.Fill.invisible }
-	dbgf := draw.Fill.debug
-	debug_brush := draw.Shape{
-		scale: bs
-		fill: dbgf
-		colors: draw.Colors{draw.rgba(0, 0, 125, 25), draw.rgba(0, 0, 125, 25)}
-	}
-
-	arx := f32(0.0)
-	ary := f32(0.0)
-
-	grey_blue.rectangle(arx, ary, size_w, size_h)
-
-	wbr.rounded_rectangle(arx * 1.1 + 50, ary * 1.1 + 50, size_w, size_h, 20)
-
-	circle_x := arx * 0.8 + 200
-	circle_y := ary * 0.8 + 70
-	wbr.colors.solid = draw.rgba(225, 120, 0, 127)
-	wbr.circle(circle_x, circle_y, 20, 40)
-
-	wbr.colors.solid = draw.rgba(0, 0, 0, 127)
-	wbr.ellipse(arx * 0.8 + 400, ary * 0.8 + 60, 40, 80, 50)
-
-	wbr.arc(600, 500, 50, 0 * draw.deg2rad, 90 * draw.deg2rad)
-
-	wbr.triangle(20, 20, 50, 30, 25, 65)
-
-	wbr.rectangle(100 + arx * 1.1, 400 + ary * 1.1, size_w * 0.5, size_h * 0.5)
-	wbr.line(arx + 280, ary + 200, arx + 500, ary + 200 + 200)
-
-	wbr.poly([f32(0), 0, 100, 0, 150, 50, 110, 70, 80, 50, 40, 60, 0, 10], []int{}, arx + 150,
-		ary + 100 * 1.1)
-
-	wbr.poly([f32(0), 0, 40, -40, 100, 0, 150, 50, 110, 70, 80, 50, 40, 60, 0, 10 /* h */, 20,
-		5, 40, -2, 70, 32, 32, 20], [8], arx + 150, ary + 300)
-
-	wbr.convex_poly([f32(0), 0, 100, 0, 150, 50, 150, 80, 80, 100, 0, 50], arx + 400 * 1.1,
-		ary + 400 * 1.1)
-
-	wbr.uniform_segment_poly(800, 500, 60, 5)
-
-	wbr.segment_poly(200, 550, 40, 60, 8)
-
-	thick_line.line(arx + 200, ary + 200, arx + 400, ary + 200 + 200 * ary * 0.051)
-	wb.line(arx + 200, ary + 200, arx + 400, ary + 200 + 200 * ary * 0.051)
-
-	thick_line.line(arx + 200, ary + 200, arx + 600, ary + 200)
-	wb.line(arx + 200, ary + 200, arx + 600, ary + 200)
 }
+
+// drawing shapes
+
+pub fn (dv &DrawViewerComponent) rectangle(shape string, x f32, y f32, w f32, h f32) {
+	dv.shapes[shape].rectangle(x, y, w, h)
+}
+
+pub fn (dv &DrawViewerComponent) rounded_rectangle(shape string, x f32, y f32, w f32, h f32, radius f32) {
+	dv.shapes[shape].rounded_rectangle(x, y, w, h, radius)
+}
+
+pub fn (dv &DrawViewerComponent) line(shape string, x1 f32, y1 f32, x2 f32, y2 f32) {
+	dv.shapes[shape].line(x1, y1, x2, y2)
+}
+
+pub fn (dv &DrawViewerComponent) poly(shape string, points []f32, holes []int, offset_x f32, offset_y f32) {
+	dv.shapes[shape].poly(points, holes, offset_x, offset_y)
+}
+
+pub fn (dv &DrawViewerComponent) uniform_segment_poly(shape string, x f32, y f32, radius f32, steps u32) {
+	dv.shapes[shape].uniform_segment_poly(x, y, radius, steps)
+}
+
+pub fn (dv &DrawViewerComponent) segment_poly(shape string, x f32, y f32, radius_x f32, radius_y f32, steps u32) {
+	dv.shapes[shape].segment_poly(x, y, radius_x, radius_y, steps)
+}
+
+// fn (b Shape) uniform_line_segment_poly(x f32, y f32, radius f32, steps u32)
+
+// fn (b Shape) line_segment_poly(x f32, y f32, radius_x f32, radius_y f32, steps u32)
+
+// pub fn (b Shape) circle(x f32, y f32, radius f32, steps u32)
+
+// pub fn (b Shape) ellipse(x f32, y f32, radius_x f32, radius_y f32, steps u32)
+
+// pub fn (b Shape) convex_poly(points []f32, offset_x f32, offset_y f32)
+
+// pub fn (b Shape) arc(x f32, y f32, radius f32, start_angle_in_rad f32, angle_in_rad f32)
+
+// pub fn (b Shape) triangle(x1 f32, y1 f32, x2 f32, y2 f32, x3 f32, y3 f32)
+
+// pub fn (b Shape) image(x f32, y f32, w f32, h f32, path string)
