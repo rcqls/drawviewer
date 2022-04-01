@@ -6,36 +6,43 @@ import sokol.sapp
 import sokol.gfx
 import sokol.sgl
 import gx
+import gg
 
 type DrawViewerFn = fn (dv &DrawViewerComponent)
 
 struct DrawViewerComponent {
 pub mut:
-	id        string
-	layout    ui.CanvasLayout
-	alpha_pip sgl.Pipeline
-	pipdesc   C.sg_pipeline_desc
-	shapes    map[string]draw.Shape
-	on_draw   DrawViewerFn
+	id          string
+	layout      &ui.CanvasLayout
+	alpha_pip   sgl.Pipeline
+	pipdesc     C.sg_pipeline_desc
+	shapes      []Shape
+	shape_style map[string]draw.Shape
+	on_draw     DrawViewerFn
 }
 
 pub struct DrawViewerParams {
-	id       string
-	bg_color gx.Color
-	shapes   map[string]draw.Shape
-	on_draw  DrawViewerFn = DrawViewerFn(0)
+	id          string
+	bg_color    gx.Color
+	shapes      []Shape
+	shape_style map[string]draw.Shape
+	on_draw     DrawViewerFn = DrawViewerFn(0)
 }
 
 pub fn drawviewer_canvaslayout(p DrawViewerParams) &ui.CanvasLayout {
 	mut layout := ui.canvas_layout(
 		id: ui.component_id(p.id, 'layout')
 		on_draw: dv_draw
+		scrollview: true
+		full_size_fn: dv_full_size
 		bg_color: p.bg_color
 	)
 	dvc := &DrawViewerComponent{
 		id: p.id
 		layout: layout
 		on_draw: p.on_draw
+		shape_style: p.shape_style
+		shapes: p.shapes
 	}
 	ui.component_connect(dvc, layout)
 	layout.on_init = dv_init
@@ -80,50 +87,76 @@ fn dv_init_alpha() C.sg_pipeline_desc {
 
 fn dv_draw(c &ui.CanvasLayout, state voidptr) {
 	dvc := drawviewer_component(c)
+	// println("dv_draw $c.id $c.x, $c.y $dvc.layout.x, $dvc.layout.y")
 	sgl.load_pipeline(dvc.alpha_pip)
+	for s in dvc.shapes {
+		s.draw(dvc)
+	}
 	if dvc.on_draw != DrawViewerFn(0) {
 		dvc.on_draw(dvc)
 	}
 }
 
-// drawing shapes
-
-pub fn (dv &DrawViewerComponent) rectangle(shape string, x f32, y f32, w f32, h f32) {
-	dv.shapes[shape].rectangle(x, y, w, h)
+fn dv_full_size(c &ui.CanvasLayout) (int, int) {
+	dvc := drawviewer_component(c)
+	b := shapes_bounds(dvc.shapes)
+	return int(b.x + b.width), int(b.y + b.height)
 }
 
-pub fn (dv &DrawViewerComponent) rounded_rectangle(shape string, x f32, y f32, w f32, h f32, radius f32) {
-	dv.shapes[shape].rounded_rectangle(x, y, w, h, radius)
-}
+// // drawing shapes
 
-pub fn (dv &DrawViewerComponent) line(shape string, x1 f32, y1 f32, x2 f32, y2 f32) {
-	dv.shapes[shape].line(x1, y1, x2, y2)
-}
+// pub fn (dv &DrawViewerComponent) rectangle(shape string, x f32, y f32, w f32, h f32) {
+// 	dv.shapes[shape].rectangle(dv.layout.rel_pos_x(x), dv.layout.rel_pos_y(y), w, h)
+// }
 
-pub fn (dv &DrawViewerComponent) poly(shape string, points []f32, holes []int, offset_x f32, offset_y f32) {
-	dv.shapes[shape].poly(points, holes, offset_x, offset_y)
-}
+// pub fn (dv &DrawViewerComponent) rounded_rectangle(shape string, x f32, y f32, w f32, h f32, radius f32) {
+// 	dv.shapes[shape].rounded_rectangle(dv.layout.rel_pos_x(x), dv.layout.rel_pos_y(y), w, h, radius)
+// }
 
-pub fn (dv &DrawViewerComponent) uniform_segment_poly(shape string, x f32, y f32, radius f32, steps u32) {
-	dv.shapes[shape].uniform_segment_poly(x, y, radius, steps)
-}
+// pub fn (dv &DrawViewerComponent) line(shape string, x1 f32, y1 f32, x2 f32, y2 f32) {
+// 	dv.shapes[shape].line(dv.layout.rel_pos_x(x1), dv.layout.rel_pos_y(y1), dv.layout.rel_pos_x(x2), dv.layout.rel_pos_y(y2))
+// }
 
-pub fn (dv &DrawViewerComponent) segment_poly(shape string, x f32, y f32, radius_x f32, radius_y f32, steps u32) {
-	dv.shapes[shape].segment_poly(x, y, radius_x, radius_y, steps)
-}
+// pub fn (dv &DrawViewerComponent) poly(shape string, points []f32, holes []int, offset_x f32, offset_y f32) {
+// 	dv.shapes[shape].poly(points, holes, dv.layout.rel_pos_x(offset_x), dv.layout.rel_pos_y(offset_y))
+// }
 
-// fn (b Shape) uniform_line_segment_poly(x f32, y f32, radius f32, steps u32)
+// pub fn (dv &DrawViewerComponent) uniform_segment_poly(shape string, x f32, y f32, radius f32, steps u32) {
+// 	dv.shapes[shape].uniform_segment_poly(dv.layout.rel_pos_x(x), dv.layout.rel_pos_y(y), radius, steps)
+// }
 
-// fn (b Shape) line_segment_poly(x f32, y f32, radius_x f32, radius_y f32, steps u32)
+// pub fn (dv &DrawViewerComponent) segment_poly(shape string, x f32, y f32, radius_x f32, radius_y f32, steps u32) {
+// 	dv.shapes[shape].segment_poly(dv.layout.rel_pos_x(x), dv.layout.rel_pos_y(y), radius_x, radius_y, steps)
+// }
 
-// pub fn (b Shape) circle(x f32, y f32, radius f32, steps u32)
+// pub fn (dv &DrawViewerComponent) uniform_line_segment_poly(shape string, x f32, y f32, radius f32, steps u32) {
+// 	dv.shapes[shape].uniform_line_segment_poly(dv.layout.rel_pos_x(x), dv.layout.rel_pos_y(y), radius, steps)
+// }
 
-// pub fn (b Shape) ellipse(x f32, y f32, radius_x f32, radius_y f32, steps u32)
+// pub fn (dv &DrawViewerComponent) line_segment_poly(shape string, x f32, y f32, radius_x f32, radius_y f32, steps u32) {
+// 	dv.shapes[shape].line_segment_poly(dv.layout.rel_pos_x(x), dv.layout.rel_pos_y(y), radius_x, radius_y, steps)
+// }
 
-// pub fn (b Shape) convex_poly(points []f32, offset_x f32, offset_y f32)
+// pub fn (dv &DrawViewerComponent) circle(shape string, x f32, y f32, radius f32, steps u32) {
+// 	dv.shapes[shape].circle(dv.layout.rel_pos_x(x), dv.layout.rel_pos_y(y), radius, steps)
+// }
 
-// pub fn (b Shape) arc(x f32, y f32, radius f32, start_angle_in_rad f32, angle_in_rad f32)
+// pub fn (dv &DrawViewerComponent) ellipse(shape string, x f32, y f32, radius_x f32, radius_y f32, steps u32) {
+// 	dv.shapes[shape].ellipse(dv.layout.rel_pos_x(x), dv.layout.rel_pos_y(y), radius_x, radius_y, steps)
+// }
 
-// pub fn (b Shape) triangle(x1 f32, y1 f32, x2 f32, y2 f32, x3 f32, y3 f32)
+// pub fn (dv &DrawViewerComponent) convex_poly(shape string, points []f32, offset_x f32, offset_y f32) {
+// 	dv.shapes[shape].convex_poly(points, dv.layout.rel_pos_x(offset_x), dv.layout.rel_pos_y(offset_y))
+// }
 
-// pub fn (b Shape) image(x f32, y f32, w f32, h f32, path string)
+// pub fn (dv &DrawViewerComponent) arc(shape string, x f32, y f32, radius f32, start_angle_in_rad f32, angle_in_rad f32) {
+// 	dv.shapes[shape].arc(dv.layout.rel_pos_x(x), dv.layout.rel_pos_y(y), radius, start_angle_in_rad, angle_in_rad)
+// }
+
+// pub fn (dv &DrawViewerComponent) triangle(shape string, x1 f32, y1 f32, x2 f32, y2 f32, x3 f32, y3 f32) {
+// 	dv.shapes[shape].triangle(dv.layout.rel_pos_x(x1), dv.layout.rel_pos_y(y1), dv.layout.rel_pos_x(x2), dv.layout.rel_pos_y(y2), dv.layout.rel_pos_x(x3), dv.layout.rel_pos_y(y3))
+// }
+
+// pub fn (dv &DrawViewerComponent) image(shape string, x f32, y f32, w f32, h f32, path string) {
+// 	dv.shapes[shape].image(dv.layout.rel_pos_x(x), dv.layout.rel_pos_y(y), w, h, path)
+// }
