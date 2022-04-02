@@ -1,7 +1,8 @@
 import drawviewer as dv
+import larpon.sgldraw as draw
 import ui
 import gx
-import sgldraw as draw
+
 import math
 import rand
 

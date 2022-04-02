@@ -1,6 +1,6 @@
 module drawviewer
 
-import sgldraw as draw
+import larpon.sgldraw as draw
 import gg
 import math
 import ui

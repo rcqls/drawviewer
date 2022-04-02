@@ -1,7 +1,7 @@
 module drawviewer
 
 import ui
-import sgldraw as draw
+import larpon.sgldraw as draw
 import sokol.sapp
 import sokol.gfx
 import sokol.sgl
