@@ -39,7 +39,7 @@ fn main() {
 					shapes: [
 						dv.plot(
 							id: 'plot'
-							x: 150
+							x: 650
 							y: 100
 							width: 300
 							height: 300
