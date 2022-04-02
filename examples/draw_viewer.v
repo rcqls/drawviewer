@@ -2,7 +2,6 @@ import drawviewer as dv
 import ui
 import gx
 import sgldraw as draw
-import sokol.sgl
 
 struct App {
 mut:
@@ -35,54 +34,104 @@ fn main() {
 					dv.drawviewer_canvaslayout(
 					id: 'plot'
 					bg_color: gx.rgb(153, 127, 102)
-					on_draw: on_draw
 					shapes: [
-						&dv.Rectangle{'grey_blue', arx, ary, size_w, size_h},
-						&dv.RoundedRectangle{'wbr', arx * 1.1 + 50, ary * 1.1 + 50, size_w, size_h, 20},
+						dv.rectangle(
+							style: 'grey_blue'
+							x: arx
+							y: ary
+							width: size_w
+							height: size_h
+						),
+						dv.rounded_rectangle(
+							style: 'wbr'
+							x: arx * 1.1 + 50
+							y: ary * 1.1 + 50
+							width: size_w
+							height: size_h
+							radius: 20
+						),
 						// wbr.colors.solid = draw.rgba(225, 120, 0, 127)
-						&dv.Circle{'wbr', circle_x, circle_y, 20, 40},
+						dv.circle(style: 'wb', x: circle_x, y: circle_y, radius: 20),
 						// wbr.colors.solid = draw.rgba(0, 0, 0, 127)
-						&dv.Ellipse{'wbr', arx * 0.8 + 400, ary * 0.8 + 60, 40, 80, 50},
-						&dv.Arc{'wbr', 600, 500, 50, 0 * draw.deg2rad, 90 * draw.deg2rad},
-						&dv.Triangle{'wbr', 20, 20, 50, 30, 25, 65},
-						&dv.Rectangle{'wbr', 100 + arx * 1.1, 400 + ary * 1.1, size_w * 0.5, size_h * 0.5},
-						&dv.Line{'wbr', arx + 280, ary + 200, arx + 500, ary + 200 + 200},
-						&dv.Poly{'wbr', [f32(0), 0, 100, 0, 150, 50, 110, 70, 80, 50, 40, 60, 0,
-							10], []int{}, arx + 150, ary + 100 * 1.1},
-						&dv.Poly{'wbr', [f32(0), 0, 40, -40, 100, 0, 150, 50, 110, 70, 80, 50,
-							40, 60, 0, 10 /* h */, 20, 5, 40, -2, 70, 32, 32, 20], [8], arx + 150,
-							ary + 300},
-						// wbr.convex_poly([f32(0), 0, 100, 0, 150, 50, 150, 80, 80, 100, 0, 50], arx + 400 * 1.1,
-						// 	ary + 400 * 1.1)
-						&dv.UniformSegmentPoly{'wbr', 800, 500, 60, 5},
-						&dv.SegmentPoly{'wbr', 200, 550, 40, 60, 8},
-						&dv.Line{'thick_line', arx + 200, ary + 200, arx + 400, ary + 200 +
-							200 * ary * 0.051},
-						&dv.Line{'wb', arx + 200, ary + 200, arx + 400, ary + 200 +
-							200 * ary * 0.051},
-						&dv.Line{'thick_line', arx + 200, ary + 200, arx + 600, ary + 200},
-						&dv.Line{'wb', arx + 200, ary + 200, arx + 600, ary + 200},
+						dv.ellipse(x: arx * 0.8 + 400, y: ary * 0.8 + 60, radius_x: 40, radius_y: 80),
+						dv.arc(x: 600, y: 500, radius: 50, start_angle: 45, angle: 90),
+						dv.triangle(x1: 20, y1: 20, x2: 50, y2: 30, x3: 25, y3: 65),
+						dv.rectangle(
+							x: 100 + arx * 1.1
+							y: 400 + ary * 1.1
+							width: size_w * 0.5
+							height: size_h * 0.5
+						),
+						dv.line(x1: arx + 280, y1: ary + 200, x2: arx + 500, y2: ary + 200 + 200),
+						dv.poly(
+							points: [f32(0), 0, 100, 0, 150, 50, 110, 70, 80, 50, 40, 60, 0, 10]
+							offset_x: arx + 150
+							offset_y: ary + 100 * 1.1
+						),
+						dv.poly(
+							points: [f32(0), 0, 40, -40, 100, 0, 150, 50, 110, 70, 80, 50, 40,
+								60, 0, 10, 20, 5, 40, -2, 70, 32, 32, 20]
+							holes: [8]
+							offset_x: arx + 150
+							offset_y: ary + 300
+						),
+						dv.convex_poly(
+							points: [f32(0), 0, 100, 0, 150, 50, 150, 80, 80, 100, 0, 50]
+							offset_x: arx + 400 * 1.1
+							offset_y: ary + 400 * 1.1
+						),
+						dv.uniform_segment_poly(x: 800, y: 500, radius: 60, steps: 5),
+						dv.segment_poly(x: 200, y: 550, radius_x: 40, radius_y: 60, steps: 8),
+						dv.line(
+							style: 'thick_line'
+							x1: arx + 200
+							y1: ary + 200
+							x2: arx + 400
+							y2: ary + 200 + 200 * ary * 0.051
+						),
+						dv.line(
+							style: 'wb'
+							x1: arx + 200
+							y1: ary + 200
+							x2: arx + 400
+							y2: ary + 200 + 200 * ary * 0.051
+						),
+						dv.line(
+							style: 'thick_line'
+							x1: arx + 200
+							y1: ary + 200
+							x2: arx + 600
+							y2: ary + 200
+						),
+						dv.line(
+							style: 'wb'
+							x1: arx + 200
+							y1: ary + 200
+							x2: arx + 600
+							y2: ary + 200
+						),
 					]
+					style: 'wbr'
 					shape_style: {
 						'wb':         draw.Shape{
-							scale: f32(1)
-							// connect: .round
+							connect: .bevel
+							cap: .square
+							colors: draw.Colors{draw.rgba(0, 0, 0, 127), draw.rgba(255,
+								255, 255, 127)}
 						}
 						'wbr':        draw.Shape{
-							scale: f32(1)
+							// fill: .outline
 							connect: .round //.miter //.round //.bevel
 							radius: 4.5
 							colors: draw.Colors{draw.rgba(0, 0, 0, 127), draw.rgba(255,
 								255, 255, 127)}
 						}
 						'grey_blue':  draw.Shape{
-							scale: f32(1)
 							colors: draw.Colors{draw.rgb(127, 127, 127), draw.rgb(0, 0,
 								127)}
 						}
 						'thick_line': draw.Shape{
-							scale: f32(1)
-							radius: 4
+							radius: 3
 							colors: draw.Colors{draw.rgba(0, 127, 25, 127), draw.rgba(0,
 								127, 25, 127)}
 						}
@@ -93,9 +142,4 @@ fn main() {
 	)
 	app.window = window
 	ui.run(window)
-}
-
-fn on_draw(dvc &dv.DrawViewerComponent) {
-	sgl.load_pipeline(dvc.alpha_pip)
-	// bs := f32(1)
 }
