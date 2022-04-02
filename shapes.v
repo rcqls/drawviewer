@@ -6,13 +6,8 @@ import math
 import ui
 
 interface Shape {
-	shape_style string
 	draw(dv &DrawViewerComponent)
 	bounds() gg.Rect
-}
-
-fn (s &Shape) shape_style(dv &DrawViewerComponent) draw.Shape {
-	return dv.shape_style(s.shape_style)
 }
 
 fn (s &Shape) rel_bounds(dv &DrawViewerComponent) gg.Rect {
@@ -30,7 +25,7 @@ struct Rectangle {
 
 [params]
 pub struct RectangleParams {
-	style  string = '_'
+	style  string
 	x      f32
 	y      f32
 	width  f32 = 1
@@ -42,7 +37,7 @@ pub fn rectangle(p RectangleParams) &Rectangle {
 }
 
 pub fn (s &Rectangle) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).rectangle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
+	dv.shape_style(s.shape_style).rectangle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
 		s.w, s.h)
 }
 
@@ -61,7 +56,7 @@ struct RoundedRectangle {
 
 [params]
 pub struct RoundedRectangleParams {
-	style  string = '_'
+	style  string
 	x      f32
 	y      f32
 	width  f32
@@ -74,7 +69,7 @@ pub fn rounded_rectangle(p RoundedRectangleParams) &RoundedRectangle {
 }
 
 pub fn (s &RoundedRectangle) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).rounded_rectangle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
+	dv.shape_style(s.shape_style).rounded_rectangle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
 		s.w, s.h, s.radius)
 }
 
@@ -83,6 +78,7 @@ pub fn (s &RoundedRectangle) bounds() gg.Rect {
 }
 
 struct Line {
+mut:
 	shape_style string
 	x1          f32
 	y1          f32
@@ -92,7 +88,7 @@ struct Line {
 
 [params]
 pub struct LineParams {
-	style string = '_'
+	style string
 	x1    f32
 	y1    f32
 	x2    f32
@@ -104,7 +100,7 @@ pub fn line(p LineParams) &Line {
 }
 
 pub fn (s &Line) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).line(dv.layout.rel_pos_x(s.x1), dv.layout.rel_pos_y(s.y1),
+	dv.shape_style(s.shape_style).line(dv.layout.rel_pos_x(s.x1), dv.layout.rel_pos_y(s.y1),
 		dv.layout.rel_pos_x(s.x2), dv.layout.rel_pos_y(s.y2))
 }
 
@@ -113,6 +109,7 @@ pub fn (s &Line) bounds() gg.Rect {
 }
 
 struct Lines {
+mut:
 	shape_style string
 	x1          []f32
 	y1          []f32
@@ -122,7 +119,7 @@ struct Lines {
 
 [params]
 pub struct LinesParams {
-	style string = '_'
+	style string
 	x1    []f32
 	y1    []f32
 	x2    []f32
@@ -131,6 +128,59 @@ pub struct LinesParams {
 
 pub fn lines(p LinesParams) &Lines {
 	return &Lines{p.style, p.x1, p.y1, p.x2, p.y2}
+}
+
+pub fn (s &Lines) draw(dv &DrawViewerComponent) {
+	shape := dv.shape_style(s.shape_style)
+	// suppose first x1, y1, x2, y2 same length
+	for i, _ in s.x1 {
+		shape.line(dv.layout.rel_pos_x(s.x1[i]), dv.layout.rel_pos_y(s.y1[i]), dv.layout.rel_pos_x(s.x2[i]),
+			dv.layout.rel_pos_y(s.y2[i]))
+	}
+}
+
+pub fn (s &Lines) bounds() gg.Rect {
+	mut x, mut y := s.x1.clone(), s.y1.clone()
+	x << s.x2.clone()
+	y << s.y2.clone()
+	return xy_bounds(x, y)
+}
+
+struct Path {
+mut:
+	shape_style string
+	x           []f32
+	y           []f32
+	closed      bool
+}
+
+[params]
+pub struct PathParams {
+	style  string
+	x      []f32
+	y      []f32
+	closed bool
+}
+
+pub fn path(p PathParams) &Path {
+	return &Path{p.style, p.x, p.y, p.closed}
+}
+
+pub fn (s &Path) draw(dv &DrawViewerComponent) {
+	shape := dv.shape_style(s.shape_style)
+	// suppose first x, y same length
+	for i in 0 .. (s.x.len - 1) {
+		shape.line(dv.layout.rel_pos_x(s.x[i]), dv.layout.rel_pos_y(s.y[i]), dv.layout.rel_pos_x(s.x[
+			i + 1]), dv.layout.rel_pos_y(s.y[i + 1]))
+	}
+	if s.closed {
+		shape.line(dv.layout.rel_pos_x(s.x[s.x.len - 1]), dv.layout.rel_pos_y(s.y[s.x.len - 1]),
+			dv.layout.rel_pos_x(s.x[0]), dv.layout.rel_pos_y(s.y[0]))
+	}
+}
+
+pub fn (s &Path) bounds() gg.Rect {
+	return xy_bounds(s.x, s.y)
 }
 
 struct Poly {
@@ -143,7 +193,7 @@ struct Poly {
 
 [params]
 pub struct PolyParams {
-	style    string = '_'
+	style    string
 	points   []f32
 	holes    []int
 	offset_x f32
@@ -155,7 +205,7 @@ pub fn poly(p PolyParams) &Poly {
 }
 
 pub fn (s &Poly) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).poly(s.points, s.holes, dv.layout.rel_pos_x(s.offset_x),
+	dv.shape_style(s.shape_style).poly(s.points, s.holes, dv.layout.rel_pos_x(s.offset_x),
 		dv.layout.rel_pos_y(s.offset_y))
 }
 
@@ -174,7 +224,7 @@ struct UniformSegmentPoly {
 
 [params]
 pub struct UniformSegmentPolyParams {
-	style  string = '_'
+	style  string
 	x      f32
 	y      f32
 	radius f32
@@ -186,7 +236,7 @@ pub fn uniform_segment_poly(p UniformSegmentPolyParams) &UniformSegmentPoly {
 }
 
 pub fn (s &UniformSegmentPoly) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).uniform_segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
+	dv.shape_style(s.shape_style).uniform_segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
 		s.radius, s.steps)
 }
 
@@ -205,7 +255,7 @@ struct SegmentPoly {
 
 [params]
 pub struct SegmentPolyParams {
-	style    string = '_'
+	style    string
 	x        f32
 	y        f32
 	radius_x f32
@@ -218,7 +268,7 @@ pub fn segment_poly(p SegmentPolyParams) &SegmentPoly {
 }
 
 pub fn (s &SegmentPoly) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
+	dv.shape_style(s.shape_style).segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
 		s.radius_x, s.radius_y, s.steps)
 }
 
@@ -239,8 +289,8 @@ pub fn uniform_line_segment_poly(p UniformSegmentPolyParams) &UniformLineSegment
 }
 
 pub fn (s &UniformLineSegmentPoly) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).uniform_line_segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
-		s.radius, s.steps)
+	dv.shape_style(s.shape_style).uniform_line_segment_poly(dv.layout.rel_pos_x(s.x),
+		dv.layout.rel_pos_y(s.y), s.radius, s.steps)
 }
 
 pub fn (s &UniformLineSegmentPoly) bounds() gg.Rect {
@@ -248,7 +298,7 @@ pub fn (s &UniformLineSegmentPoly) bounds() gg.Rect {
 }
 
 struct LineSegmentPoly {
-	shape_style string = '_'
+	shape_style string
 	x           f32
 	y           f32
 	radius_x    f32
@@ -261,7 +311,7 @@ pub fn line_segment_poly(p SegmentPolyParams) &LineSegmentPoly {
 }
 
 pub fn (s &LineSegmentPoly) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).line_segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
+	dv.shape_style(s.shape_style).line_segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
 		s.radius_x, s.radius_y, s.steps)
 }
 
@@ -279,7 +329,7 @@ struct Circle {
 
 [params]
 pub struct CircleParams {
-	style  string = '_'
+	style  string
 	x      f32
 	y      f32
 	radius f32 = 1
@@ -291,7 +341,7 @@ pub fn circle(p CircleParams) &Circle {
 }
 
 pub fn (s &Circle) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).circle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
+	dv.shape_style(s.shape_style).circle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
 		s.radius, s.steps)
 }
 
@@ -310,7 +360,7 @@ struct Ellipse {
 
 [params]
 pub struct EllipseParams {
-	style    string = '_'
+	style    string
 	x        f32
 	y        f32
 	radius_x f32 = 1
@@ -323,7 +373,7 @@ pub fn ellipse(p EllipseParams) &Ellipse {
 }
 
 pub fn (s &Ellipse) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).ellipse(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
+	dv.shape_style(s.shape_style).ellipse(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
 		s.radius_x, s.radius_y, s.steps)
 }
 
@@ -340,7 +390,7 @@ struct ConvexPoly {
 
 [params]
 pub struct ConvexPolyParams {
-	style    string = '_'
+	style    string
 	points   []f32
 	offset_x f32
 	offset_y f32
@@ -351,7 +401,8 @@ pub fn convex_poly(p ConvexPolyParams) &ConvexPoly {
 }
 
 pub fn (s &ConvexPoly) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).convex_poly(s.points, dv.layout.rel_pos_x(s.offset_x), dv.layout.rel_pos_y(s.offset_y))
+	dv.shape_style(s.shape_style).convex_poly(s.points, dv.layout.rel_pos_x(s.offset_x),
+		dv.layout.rel_pos_y(s.offset_y))
 }
 
 pub fn (s &ConvexPoly) bounds() gg.Rect {
@@ -369,7 +420,7 @@ struct Arc {
 }
 
 pub struct ArcParams {
-	style       string = '_'
+	style       string
 	x           f32
 	y           f32
 	radius      f32
@@ -382,8 +433,8 @@ pub fn arc(p ArcParams) &Arc {
 }
 
 pub fn (s &Arc) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).arc(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.radius,
-		s.start_angle_in_rad, s.angle_in_rad)
+	dv.shape_style(s.shape_style).arc(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
+		s.radius, s.start_angle_in_rad, s.angle_in_rad)
 }
 
 pub fn (s &Arc) bounds() gg.Rect {
@@ -403,7 +454,7 @@ struct Triangle {
 
 [params]
 pub struct TriangleParams {
-	style string = '_'
+	style string
 	x1    f32
 	y1    f32
 	x2    f32
@@ -417,7 +468,7 @@ pub fn triangle(p TriangleParams) &Triangle {
 }
 
 pub fn (s &Triangle) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).triangle(dv.layout.rel_pos_x(s.x1), dv.layout.rel_pos_y(s.y1),
+	dv.shape_style(s.shape_style).triangle(dv.layout.rel_pos_x(s.x1), dv.layout.rel_pos_y(s.y1),
 		dv.layout.rel_pos_x(s.x2), dv.layout.rel_pos_y(s.y2), dv.layout.rel_pos_x(s.x3),
 		dv.layout.rel_pos_y(s.y3))
 }
@@ -436,7 +487,7 @@ struct Image {
 }
 
 pub struct ImageParams {
-	style  string = '_'
+	style  string
 	x      f32
 	y      f32
 	width  f32
@@ -449,7 +500,7 @@ pub fn image(p ImageParams) &Image {
 }
 
 pub fn (s &Image) draw(dv &DrawViewerComponent) {
-	Shape(s).shape_style(dv).image(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
+	dv.shape_style(s.shape_style).image(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
 		s.w, s.h, s.path)
 }
 
@@ -458,6 +509,19 @@ pub fn (s &Image) bounds() gg.Rect {
 }
 
 // utility function for bounds
+
+fn union_bounds(bounds []gg.Rect) gg.Rect {
+	if bounds.len == 0 {
+		return gg.Rect{}
+	} else {
+		mut b := bounds[0]
+		// println("b init: $b")
+		for b2 in bounds[1..] {
+			b = ui.union_rect(b, b2)
+		}
+		return b
+	}
+}
 
 fn shapes_bounds(shapes []Shape) gg.Rect {
 	if shapes.len == 0 {
@@ -485,6 +549,23 @@ fn points_bounds(points []f32) gg.Rect {
 			y_mi = points[i + 1]
 		} else if points[i + 1] > y_ma {
 			y_ma = points[i + 1]
+		}
+	}
+	return gg.Rect{x_mi, y_mi, x_ma - x_mi, y_ma - y_mi}
+}
+
+fn xy_bounds(x []f32, y []f32) gg.Rect {
+	mut x_mi, mut x_ma, mut y_mi, mut y_ma := x[0], x[0], y[0], y[0]
+	for i in 1 .. x.len {
+		if x[i] < x_mi {
+			x_mi = x[i]
+		} else if x[i] > x_ma {
+			x_ma = x[i]
+		}
+		if y[i] < y_mi {
+			y_mi = y[i]
+		} else if y[i] > y_ma {
+			y_ma = y[i]
 		}
 	}
 	return gg.Rect{x_mi, y_mi, x_ma - x_mi, y_ma - y_mi}

@@ -2,6 +2,7 @@ import drawviewer as dv
 import ui
 import gx
 import sgldraw as draw
+import math
 
 struct App {
 mut:
@@ -35,6 +36,18 @@ fn main() {
 					id: 'plot'
 					bg_color: gx.rgb(153, 127, 102)
 					shapes: [
+						dv.plot(
+							id: 'plot'
+							x: 500
+							y: 100
+							width: 200
+							height: 200
+							xlim: [-3.0, 3]!
+							ylim: [-1.0, 1]!
+							shapes: [dv.curve(f: math.sin)]
+						),
+						dv.path(style: 'thin_line', x: [f32(300), 200, 400], y: [f32(150), 200,
+							400]),
 						dv.rectangle(
 							style: 'grey_blue'
 							x: arx
@@ -50,9 +63,7 @@ fn main() {
 							height: size_h
 							radius: 20
 						),
-						// wbr.colors.solid = draw.rgba(225, 120, 0, 127)
 						dv.circle(style: 'wb', x: circle_x, y: circle_y, radius: 20),
-						// wbr.colors.solid = draw.rgba(0, 0, 0, 127)
 						dv.ellipse(x: arx * 0.8 + 400, y: ary * 0.8 + 60, radius_x: 40, radius_y: 80),
 						dv.arc(x: 600, y: 500, radius: 50, start_angle: 45, angle: 90),
 						dv.triangle(x1: 20, y1: 20, x2: 50, y2: 30, x3: 25, y3: 65),
@@ -82,19 +93,12 @@ fn main() {
 						),
 						dv.uniform_segment_poly(x: 800, y: 500, radius: 60, steps: 5),
 						dv.segment_poly(x: 200, y: 550, radius_x: 40, radius_y: 60, steps: 8),
-						dv.line(
+						dv.lines(
 							style: 'thick_line'
-							x1: arx + 200
-							y1: ary + 200
-							x2: arx + 400
-							y2: ary + 200 + 200 * ary * 0.051
-						),
-						dv.line(
-							style: 'wb'
-							x1: arx + 200
-							y1: ary + 200
-							x2: arx + 400
-							y2: ary + 200 + 200 * ary * 0.051
+							x1: [arx + 500, arx + 300]
+							y1: [ary + 500, ary + 300]
+							x2: [arx + 400].repeat(2)
+							y2: [ary + 200 + 200 * ary * 0.051].repeat(2)
 						),
 						dv.line(
 							style: 'thick_line'
@@ -132,6 +136,11 @@ fn main() {
 						}
 						'thick_line': draw.Shape{
 							radius: 3
+							colors: draw.Colors{draw.rgba(0, 127, 25, 127), draw.rgba(0,
+								127, 25, 127)}
+						}
+						'thin_line':  draw.Shape{
+							radius: 1.1
 							colors: draw.Colors{draw.rgba(0, 127, 25, 127), draw.rgba(0,
 								127, 25, 127)}
 						}

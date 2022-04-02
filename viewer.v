@@ -111,9 +111,13 @@ pub fn (mut dv DrawViewerComponent) set_style(style string) {
 }
 
 pub fn (dv &DrawViewerComponent) shape_style(style string) draw.Shape {
-	return dv.shape_style[if style == '_' {
+	return dv.shape_style[if style == '' {
 		dv.current_style
 	} else {
 		style
 	}]
+}
+
+pub fn (mut dv DrawViewerComponent) add_shape_style(style string, shape_style draw.Shape) {
+	dv.shape_style[style] = shape_style
 }
