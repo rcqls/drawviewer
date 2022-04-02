@@ -2,7 +2,6 @@ import drawviewer as dv
 import larpon.sgldraw as draw
 import ui
 import gx
-
 import math
 import rand
 
@@ -40,7 +39,7 @@ fn main() {
 					shapes: [
 						dv.plot(
 							id: 'plot'
-							x: 650
+							x: 150
 							y: 100
 							width: 300
 							height: 300
