@@ -3,6 +3,7 @@ import ui
 import gx
 import sgldraw as draw
 import math
+import rand
 
 struct App {
 mut:
@@ -22,7 +23,7 @@ fn main() {
 	circle_y := ary * 0.8 + 70
 
 	window := ui.window(
-		width: 800
+		width: 1000
 		height: 600
 		title: 'DrawViewer'
 		state: app
@@ -38,16 +39,21 @@ fn main() {
 					shapes: [
 						dv.plot(
 							id: 'plot'
-							x: 500
+							x: 650
 							y: 100
-							width: 200
-							height: 200
+							width: 300
+							height: 300
+							bg_color: gx.black
 							xlim: [-3.0, 3]!
 							ylim: [-1.0, 1]!
-							shapes: [dv.curve(f: math.sin)]
+							shapes: [dv.curve(style: 'thick_line', f: math.sin),
+								dv.scatterplot(x: runif(30, -3, 3), y: runif(30, -1, 1), radius: 5)]
 						),
-						dv.path(style: 'thin_line', x: [f32(300), 200, 400], y: [f32(150), 200,
-							400]),
+						dv.path(
+							style: 'thin_line'
+							x: [f32(300), 200, 400]
+							y: [f32(150), 200, 400]
+						),
 						dv.rectangle(
 							style: 'grey_blue'
 							x: arx
@@ -151,4 +157,12 @@ fn main() {
 	)
 	app.window = window
 	ui.run(window)
+}
+
+fn runif(n int, from f32, to f32) []f32 {
+	mut r := [from + rand.f32() * (to - from)]
+	for _ in 0 .. (n - 1) {
+		r << from + rand.f32() * (to - from)
+	}
+	return r
 }

@@ -1,6 +1,8 @@
 module drawviewer
 
 import gg
+import gx
+import ui
 
 enum MargPlot {
 	bottom
@@ -20,9 +22,14 @@ mut:
 struct Plot {
 	id string
 mut:
-	marg   map[MargPlot]int
-	xy     PlotCoordTransfrom
-	shapes []PlotShape
+	x        int
+	y        int
+	width    int
+	height   int
+	marg     map[MargPlot]int
+	xy       PlotCoordTransfrom
+	shapes   []PlotShape
+	bg_color gx.Color
 }
 
 [params]
@@ -41,14 +48,16 @@ pub struct PlotParams {
 		.left:   10,
 		.right:  10,
 	}
+	bg_color gx.Color = ui.no_color
 }
 
 pub fn plot(p PlotParams) &Plot {
+	println(p.marg[.left])
 	mut xy := PlotCoordTransfrom{
-		x: p.x
-		y: p.y
-		width: p.width
-		height: p.height
+		x: p.x + p.marg[.left]
+		y: p.y + p.marg[.top]
+		width: p.width - p.marg[.left] - p.marg[.right]
+		height: p.height - p.marg[.top] - p.marg[.bottom]
 		from_x: p.xlim[0]
 		to_x: p.xlim[1]
 		from_y: p.ylim[0]
@@ -57,8 +66,13 @@ pub fn plot(p PlotParams) &Plot {
 	xy.update()
 	mut pl := &Plot{
 		id: p.id
+		x: p.x
+		y: p.y
+		width: p.width
+		height: p.height
 		xy: xy
 		marg: p.marg
+		bg_color: p.bg_color
 	}
 	mut a := axis(
 		from_x: f32(xy.from_x)
@@ -73,6 +87,9 @@ pub fn plot(p PlotParams) &Plot {
 }
 
 pub fn (s &Plot) draw(dv &DrawViewerComponent) {
+	if s.bg_color != ui.no_color {
+		dv.layout.draw_rect_filled(s.x, s.y, s.width, s.height, s.bg_color)
+	}
 	for sh in s.shapes {
 		sh.draw(dv)
 	}
@@ -193,6 +210,55 @@ pub fn (s &Axis) bounds() gg.Rect {
 	return s.lines.bounds()
 }
 
+struct ScatterPlot {
+mut:
+	plot        &Plot = 0
+	shape_style string
+	x           []f32
+	y           []f32
+	radii       []f32
+	radius      f32
+	points      Circles
+}
+
+[params]
+pub struct ScatterPlotParams {
+	style       string
+	shape_style string
+	x           []f32
+	y           []f32
+	radii       []f32
+	radius      f32 = 1
+}
+
+pub fn scatterplot(p ScatterPlotParams) &ScatterPlot {
+	return &ScatterPlot{
+		shape_style: p.style
+		x: p.x
+		y: p.y
+		radius: p.radius
+		radii: p.radii
+	}
+}
+
+pub fn (s &ScatterPlot) draw(dv &DrawViewerComponent) {
+	s.points.draw(dv)
+}
+
+pub fn (s &ScatterPlot) bounds() gg.Rect {
+	return s.points.bounds()
+}
+
+fn (mut s ScatterPlot) update() {
+	p := s.plot
+	s.points.shape_style = s.shape_style
+	for i in 0 .. s.x.len {
+		s.points.x << f32(p.xy.x(s.x[i]))
+		s.points.y << f32(p.xy.y(s.y[i]))
+	}
+	s.points.radius = if s.radii.len > 0 { s.radii } else { [s.radius].repeat(s.x.len) }
+}
+
 pub type CurveFn = fn (x f64) f64
 
 struct Curve {
@@ -230,12 +296,7 @@ pub fn (s &Curve) draw(dv &DrawViewerComponent) {
 }
 
 pub fn (s &Curve) bounds() gg.Rect {
-	mut x, mut y, dx := [s.from], [f32(s.f(s.from))], (s.to - s.from) / s.steps
-	for i in 1 .. s.steps + 1 {
-		x << s.from + dx * i
-		y << f32(s.f(s.from + dx * i))
-	}
-	return xy_bounds(x, y)
+	return s.path.bounds()
 }
 
 fn (mut s Curve) update() {
@@ -246,6 +307,7 @@ fn (mut s Curve) update() {
 		s.to = f32(p.xy.to_x)
 		// println("curve range: $s.from, $s.to")
 	}
+	s.path.shape_style = s.shape_style
 	// suppose first x, y same length
 	mut x, dx := s.from, (s.to - s.from) / s.steps
 	mut y := f32(s.f(x))

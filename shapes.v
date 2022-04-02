@@ -349,6 +349,42 @@ pub fn (s &Circle) bounds() gg.Rect {
 	return gg.Rect{s.x - s.radius, s.y - s.radius, s.radius * 2, s.radius * 2}
 }
 
+struct Circles {
+mut:
+	shape_style string
+	x           []f32
+	y           []f32
+	radius      []f32
+	steps       u32
+}
+
+[params]
+pub struct CirclesParams {
+	style  string
+	x      []f32
+	y      []f32
+	radii  []f32
+	radius f32 = 1.0
+	steps  u32 = 30
+}
+
+pub fn circles(p CirclesParams) &Circles {
+	r := if p.radii.len == p.x.len { p.radii } else { [p.radius].repeat(p.x.len) }
+	return &Circles{p.style, p.x, p.y, r, p.steps}
+}
+
+pub fn (s &Circles) draw(dv &DrawViewerComponent) {
+	// suppose first that s.x, s.y and s.radius
+	for i, _ in s.x {
+		dv.shape_style(s.shape_style).circle(dv.layout.rel_pos_x(s.x[i]), dv.layout.rel_pos_y(s.y[i]),
+			s.radius[i], s.steps)
+	}
+}
+
+pub fn (s &Circles) bounds() gg.Rect {
+	return xy_bounds(s.x, s.y)
+}
+
 struct Ellipse {
 	shape_style string
 	x           f32
