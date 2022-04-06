@@ -62,9 +62,9 @@ pub fn device_shape_drawviewer(filename string, dvc &DrawViewerComponent) {
 	for s in dvc.shapes {
 		s.draw_device(d, dvc)
 	}
-	// if dvc.on_draw != DrawViewerFn(0) {
-	// 	dvc.on_draw(d, dvc)
-	// }
+	if dvc.on_draw != DrawViewerFn(0) {
+		dvc.on_draw(d.dd, dvc)
+	}
 
 	d.end()
 	d.save(filename)
@@ -119,7 +119,6 @@ pub fn (d &DeviceShapeSVG) line_segment_poly(x f32, y f32, radius_x f32, radius_
 }
 
 pub fn (d &DeviceShapeSVG) circle(x f32, y f32, radius f32, steps u32, style string) {
-	println('hereeeeeee')
 	mut s := d.s
 	s.circle(int(x) + d.offset_x, int(y) + d.offset_y, int(radius), d.svg_params(style))
 }
@@ -151,10 +150,9 @@ pub fn (d &DeviceShapeSVG) image(x f32, y f32, w f32, h f32, path string, style 
 
 pub fn (d &DeviceShapeSVG) svg_params(style string) vsvg.Params {
 	sty := d.dsc.shape_style(style)
-	println(sty)
 	r := if sty.fill.has(.outline) { int(sty.radius) } else { 0 }
 	return vsvg.Params{
-		fill: if sty.fill.has(.outline) { shape_color(sty.colors.outline) } else { 'none' }
+		fill: if sty.fill.has(.solid) { shape_color(sty.colors.solid) } else { 'none' }
 		stroke: if sty.fill.has(.outline) { shape_color(sty.colors.outline) } else { 'none' }
 		strokewidth: r * 2
 		rx: r
@@ -165,30 +163,3 @@ pub fn (d &DeviceShapeSVG) svg_params(style string) vsvg.Params {
 pub fn shape_color(c draw.Color) string {
 	return vsvg.rgba(c.r, c.g, c.b, c.a)
 }
-
-// pub fn (d &DeviceShapeSVG) fill(style string) string {
-// 	sty := d.dsc.shape_style(style)
-// 	return if sty.fill.has(.solid) {
-// 		shape_color(sty.colors.solid)
-// 	} else {
-// 		"none"
-// 	}
-// }
-
-// pub fn (d &DeviceShapeSVG) stroke(style string) string {
-// 	sty := d.dsc.shape_style(style)
-// 	return if sty.fill.has(.outline) {
-// 		shape_color(sty.colors.outline)
-// 	} else {
-// 		"none"
-// 	}
-// }
-
-// pub fn (d &DeviceShapeSVG) strokewidth(style string) int {
-// 	sty := d.dsc.shape_style(style)
-// 	return if sty.fill.has(.outline) {
-// 		int(sty.radius * 2)
-// 	} else {
-// 		0
-// 	}
-// }
