@@ -7,6 +7,7 @@ import ui
 
 interface Shape {
 	draw(dv &DrawViewerComponent)
+	draw_device(d DeviceShape, dv &DrawViewerComponent)
 	bounds() gg.Rect
 }
 
@@ -37,8 +38,11 @@ pub fn rectangle(p RectangleParams) &Rectangle {
 }
 
 pub fn (s &Rectangle) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).rectangle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
-		s.w, s.h)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Rectangle) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.rectangle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.w, s.h, s.shape_style)
 }
 
 pub fn (s &Rectangle) bounds() gg.Rect {
@@ -69,8 +73,12 @@ pub fn rounded_rectangle(p RoundedRectangleParams) &RoundedRectangle {
 }
 
 pub fn (s &RoundedRectangle) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).rounded_rectangle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
-		s.w, s.h, s.radius)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &RoundedRectangle) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.rounded_rectangle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.w, s.h,
+		s.radius, s.shape_style)
 }
 
 pub fn (s &RoundedRectangle) bounds() gg.Rect {
@@ -100,8 +108,12 @@ pub fn line(p LineParams) &Line {
 }
 
 pub fn (s &Line) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).line(dv.layout.rel_pos_x(s.x1), dv.layout.rel_pos_y(s.y1),
-		dv.layout.rel_pos_x(s.x2), dv.layout.rel_pos_y(s.y2))
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Line) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.line(dv.layout.rel_pos_x(s.x1), dv.layout.rel_pos_y(s.y1), dv.layout.rel_pos_x(s.x2),
+		dv.layout.rel_pos_y(s.y2), s.shape_style)
 }
 
 pub fn (s &Line) bounds() gg.Rect {
@@ -131,11 +143,14 @@ pub fn lines(p LinesParams) &Lines {
 }
 
 pub fn (s &Lines) draw(dv &DrawViewerComponent) {
-	shape := dv.shape_style(s.shape_style)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Lines) draw_device(d DeviceShape, dv &DrawViewerComponent) {
 	// suppose first x1, y1, x2, y2 same length
 	for i, _ in s.x1 {
-		shape.line(dv.layout.rel_pos_x(s.x1[i]), dv.layout.rel_pos_y(s.y1[i]), dv.layout.rel_pos_x(s.x2[i]),
-			dv.layout.rel_pos_y(s.y2[i]))
+		d.line(dv.layout.rel_pos_x(s.x1[i]), dv.layout.rel_pos_y(s.y1[i]), dv.layout.rel_pos_x(s.x2[i]),
+			dv.layout.rel_pos_y(s.y2[i]), s.shape_style)
 	}
 }
 
@@ -167,15 +182,18 @@ pub fn path(p PathParams) &Path {
 }
 
 pub fn (s &Path) draw(dv &DrawViewerComponent) {
-	shape := dv.shape_style(s.shape_style)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Path) draw_device(d DeviceShape, dv &DrawViewerComponent) {
 	// suppose first x, y same length
 	for i in 0 .. (s.x.len - 1) {
-		shape.line(dv.layout.rel_pos_x(s.x[i]), dv.layout.rel_pos_y(s.y[i]), dv.layout.rel_pos_x(s.x[
-			i + 1]), dv.layout.rel_pos_y(s.y[i + 1]))
+		d.line(dv.layout.rel_pos_x(s.x[i]), dv.layout.rel_pos_y(s.y[i]), dv.layout.rel_pos_x(s.x[
+			i + 1]), dv.layout.rel_pos_y(s.y[i + 1]), s.shape_style)
 	}
 	if s.closed {
-		shape.line(dv.layout.rel_pos_x(s.x[s.x.len - 1]), dv.layout.rel_pos_y(s.y[s.x.len - 1]),
-			dv.layout.rel_pos_x(s.x[0]), dv.layout.rel_pos_y(s.y[0]))
+		d.line(dv.layout.rel_pos_x(s.x[s.x.len - 1]), dv.layout.rel_pos_y(s.y[s.x.len - 1]),
+			dv.layout.rel_pos_x(s.x[0]), dv.layout.rel_pos_y(s.y[0]), s.shape_style)
 	}
 }
 
@@ -205,8 +223,12 @@ pub fn poly(p PolyParams) &Poly {
 }
 
 pub fn (s &Poly) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).poly(s.points, s.holes, dv.layout.rel_pos_x(s.offset_x),
-		dv.layout.rel_pos_y(s.offset_y))
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Poly) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.poly(s.points, s.holes, dv.layout.rel_pos_x(s.offset_x), dv.layout.rel_pos_y(s.offset_y),
+		s.shape_style)
 }
 
 pub fn (s &Poly) bounds() gg.Rect {
@@ -236,8 +258,12 @@ pub fn uniform_segment_poly(p UniformSegmentPolyParams) &UniformSegmentPoly {
 }
 
 pub fn (s &UniformSegmentPoly) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).uniform_segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
-		s.radius, s.steps)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &UniformSegmentPoly) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.uniform_segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.radius,
+		s.steps, s.shape_style)
 }
 
 pub fn (s &UniformSegmentPoly) bounds() gg.Rect {
@@ -268,8 +294,12 @@ pub fn segment_poly(p SegmentPolyParams) &SegmentPoly {
 }
 
 pub fn (s &SegmentPoly) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
-		s.radius_x, s.radius_y, s.steps)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &SegmentPoly) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.radius_x, s.radius_y,
+		s.steps, s.shape_style)
 }
 
 pub fn (s &SegmentPoly) bounds() gg.Rect {
@@ -289,8 +319,12 @@ pub fn uniform_line_segment_poly(p UniformSegmentPolyParams) &UniformLineSegment
 }
 
 pub fn (s &UniformLineSegmentPoly) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).uniform_line_segment_poly(dv.layout.rel_pos_x(s.x),
-		dv.layout.rel_pos_y(s.y), s.radius, s.steps)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &UniformLineSegmentPoly) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.uniform_line_segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.radius,
+		s.steps, s.shape_style)
 }
 
 pub fn (s &UniformLineSegmentPoly) bounds() gg.Rect {
@@ -311,8 +345,12 @@ pub fn line_segment_poly(p SegmentPolyParams) &LineSegmentPoly {
 }
 
 pub fn (s &LineSegmentPoly) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).line_segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
-		s.radius_x, s.radius_y, s.steps)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &LineSegmentPoly) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.line_segment_poly(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.radius_x,
+		s.radius_y, s.steps, s.shape_style)
 }
 
 pub fn (s &LineSegmentPoly) bounds() gg.Rect {
@@ -341,8 +379,11 @@ pub fn circle(p CircleParams) &Circle {
 }
 
 pub fn (s &Circle) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).circle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
-		s.radius, s.steps)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Circle) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.circle(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.radius, s.steps, s.shape_style)
 }
 
 pub fn (s &Circle) bounds() gg.Rect {
@@ -374,10 +415,14 @@ pub fn circles(p CirclesParams) &Circles {
 }
 
 pub fn (s &Circles) draw(dv &DrawViewerComponent) {
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Circles) draw_device(d DeviceShape, dv &DrawViewerComponent) {
 	// suppose first that s.x, s.y and s.radius
 	for i, _ in s.x {
-		dv.shape_style(s.shape_style).circle(dv.layout.rel_pos_x(s.x[i]), dv.layout.rel_pos_y(s.y[i]),
-			s.radius[i], s.steps)
+		d.circle(dv.layout.rel_pos_x(s.x[i]), dv.layout.rel_pos_y(s.y[i]), s.radius[i],
+			s.steps, s.shape_style)
 	}
 }
 
@@ -409,8 +454,12 @@ pub fn ellipse(p EllipseParams) &Ellipse {
 }
 
 pub fn (s &Ellipse) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).ellipse(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
-		s.radius_x, s.radius_y, s.steps)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Ellipse) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.ellipse(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.radius_x, s.radius_y,
+		s.steps, s.shape_style)
 }
 
 pub fn (s &Ellipse) bounds() gg.Rect {
@@ -437,8 +486,12 @@ pub fn convex_poly(p ConvexPolyParams) &ConvexPoly {
 }
 
 pub fn (s &ConvexPoly) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).convex_poly(s.points, dv.layout.rel_pos_x(s.offset_x),
-		dv.layout.rel_pos_y(s.offset_y))
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &ConvexPoly) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.convex_poly(s.points, dv.layout.rel_pos_x(s.offset_x), dv.layout.rel_pos_y(s.offset_y),
+		s.shape_style)
 }
 
 pub fn (s &ConvexPoly) bounds() gg.Rect {
@@ -469,8 +522,12 @@ pub fn arc(p ArcParams) &Arc {
 }
 
 pub fn (s &Arc) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).arc(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
-		s.radius, s.start_angle_in_rad, s.angle_in_rad)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Arc) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.arc(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.radius, s.start_angle_in_rad,
+		s.angle_in_rad, s.shape_style)
 }
 
 pub fn (s &Arc) bounds() gg.Rect {
@@ -504,9 +561,13 @@ pub fn triangle(p TriangleParams) &Triangle {
 }
 
 pub fn (s &Triangle) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).triangle(dv.layout.rel_pos_x(s.x1), dv.layout.rel_pos_y(s.y1),
-		dv.layout.rel_pos_x(s.x2), dv.layout.rel_pos_y(s.y2), dv.layout.rel_pos_x(s.x3),
-		dv.layout.rel_pos_y(s.y3))
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Triangle) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.triangle(dv.layout.rel_pos_x(s.x1), dv.layout.rel_pos_y(s.y1), dv.layout.rel_pos_x(s.x2),
+		dv.layout.rel_pos_y(s.y2), dv.layout.rel_pos_x(s.x3), dv.layout.rel_pos_y(s.y3),
+		s.shape_style)
 }
 
 pub fn (s &Triangle) bounds() gg.Rect {
@@ -536,8 +597,11 @@ pub fn image(p ImageParams) &Image {
 }
 
 pub fn (s &Image) draw(dv &DrawViewerComponent) {
-	dv.shape_style(s.shape_style).image(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y),
-		s.w, s.h, s.path)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Image) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	d.image(dv.layout.rel_pos_x(s.x), dv.layout.rel_pos_y(s.y), s.w, s.h, s.path, s.shape_style)
 }
 
 pub fn (s &Image) bounds() gg.Rect {

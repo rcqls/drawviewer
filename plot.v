@@ -13,6 +13,7 @@ enum MargPlot {
 
 interface PlotShape {
 	draw(dv &DrawViewerComponent)
+	draw_device(d DeviceShape, dv &DrawViewerComponent)
 	bounds() gg.Rect
 mut:
 	plot &Plot
@@ -87,11 +88,15 @@ pub fn plot(p PlotParams) &Plot {
 }
 
 pub fn (s &Plot) draw(dv &DrawViewerComponent) {
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Plot) draw_device(d DeviceShape, dv &DrawViewerComponent) {
 	if s.bg_color != ui.no_color {
-		dv.layout.draw_rect_filled(s.x, s.y, s.width, s.height, s.bg_color)
+		dv.layout.draw_device_rect_filled(d.dd, s.x, s.y, s.width, s.height, s.bg_color)
 	}
 	for sh in s.shapes {
-		sh.draw(dv)
+		sh.draw_device(d, dv)
 	}
 }
 
@@ -203,7 +208,10 @@ pub fn (mut s Axis) update() {
 }
 
 pub fn (s &Axis) draw(dv &DrawViewerComponent) {
-	s.lines.draw(dv)
+}
+
+pub fn (s &Axis) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	s.lines.draw_device(d, dv)
 }
 
 pub fn (s &Axis) bounds() gg.Rect {
@@ -242,7 +250,11 @@ pub fn scatterplot(p ScatterPlotParams) &ScatterPlot {
 }
 
 pub fn (s &ScatterPlot) draw(dv &DrawViewerComponent) {
-	s.points.draw(dv)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &ScatterPlot) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	s.points.draw_device(d, dv)
 }
 
 pub fn (s &ScatterPlot) bounds() gg.Rect {
@@ -292,7 +304,11 @@ pub fn curve(p CurveParams) &Curve {
 }
 
 pub fn (s &Curve) draw(dv &DrawViewerComponent) {
-	s.path.draw(dv)
+	s.draw_device(dv.dsc, dv)
+}
+
+pub fn (s &Curve) draw_device(d DeviceShape, dv &DrawViewerComponent) {
+	s.path.draw_device(d, dv)
 }
 
 pub fn (s &Curve) bounds() gg.Rect {
