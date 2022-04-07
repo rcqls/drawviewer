@@ -16,8 +16,10 @@ pub mut:
 	alpha_pip sgl.Pipeline
 	pipdesc   C.sg_pipeline_desc
 	shapes    []Shape
-	dsc       &DeviceShapeContext
-	on_draw   DrawViewerFn
+	// devices
+	dsc     &DeviceShapeContext
+	dss     &DeviceShapeSVG
+	on_draw DrawViewerFn
 	// shortcuts
 	shortcuts ui.Shortcuts
 }
@@ -40,9 +42,12 @@ pub fn drawviewer_canvaslayout(p DrawViewerParams) &ui.CanvasLayout {
 		full_size_fn: dv_full_size
 		bg_color: p.bg_color
 	)
-	mut dsc := device_shape_context(
+	dsc := device_shape_context(
 		shape_style: p.shape_style
 		style: p.style
+	)
+	mut dss := device_shape_svg(
+		dsc: dsc
 	)
 	mut dvc := &DrawViewerComponent{
 		id: p.id
@@ -50,6 +55,7 @@ pub fn drawviewer_canvaslayout(p DrawViewerParams) &ui.CanvasLayout {
 		on_draw: p.on_draw
 		shapes: p.shapes
 		dsc: dsc
+		dss: dss
 	}
 
 	ui.component_connect(dvc, layout)
@@ -68,7 +74,9 @@ pub fn drawviewer_component_from_id(w ui.Window, id string) &DrawViewerComponent
 
 fn dv_init(c &ui.CanvasLayout) {
 	mut dvc := drawviewer_component(c)
-	dvc.dsc.dd = c.ui.gg
+	dvc.dsc.dd = c.ui.gg // only in init since ui not yet allocated
+	dvc.dss.dd = c.ui.svg
+
 	dvc.pipdesc = dv_init_alpha()
 	dvc.alpha_pip = sgl.make_pipeline(&dvc.pipdesc)
 }
@@ -97,7 +105,7 @@ fn dv_init_alpha() C.sg_pipeline_desc {
 fn dv_key_down(e ui.KeyEvent, c &ui.CanvasLayout) {
 	mut dv := drawviewer_component(c)
 	if e.key == .up && ui.shift_key(e.mods) {
-		device_shape_drawviewer('screenshot.svg', dv)
+		dv.dss.svg_screenshot_drawviewer('screenshot.svg', dv)
 	}
 }
 

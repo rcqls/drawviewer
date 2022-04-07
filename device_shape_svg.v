@@ -11,53 +11,35 @@ struct DeviceShapeSVG {
 mut:
 	dsc      &DeviceShapeContext = 0
 	dd       ui.DrawDevice       = ui.draw_device_print()
-	s        &vsvg.Svg
+	s        &vsvg.Svg = 0
 	offset_x int
 	offset_y int
 }
 
 [params]
 struct DeviceShapeSVGParams {
-	id       string = 'dss'
-	width    int
-	height   int
-	offset_x int
-	offset_y int
-	dsc      &DeviceShapeContext = 0
+	id  string = 'dss'
+	dsc &DeviceShapeContext = 0
 }
 
 pub fn device_shape_svg(p DeviceShapeSVGParams) &DeviceShapeSVG {
-	s := vsvg.svg(width: p.width, height: p.height)
 	return &DeviceShapeSVG{
 		id: p.id
-		s: s
 		dsc: p.dsc
-		offset_x: p.offset_x
-		offset_y: p.offset_y
 	}
 }
 
-// radius   f32     = 1.0
-// scale    f32     = 1.0
-// fill     Fill    = .solid | .outline
-// cap      Cap     = .butt
-// connect  Connect = .bevel
-// offset_x f32     = 0.0
-// offset_y f32     = 0.0
-// colors   Colors
-
-pub fn device_shape_drawviewer(filename string, dvc &DrawViewerComponent) {
+[manualfree]
+pub fn (mut d DeviceShapeSVG) svg_screenshot_drawviewer(filename string, dvc &DrawViewerComponent) {
 	// println("svg device $filename")
 	w, h := dvc.layout.adj_size()
-	mut d := device_shape_svg(
-		width: w
-		height: h
-		dsc: dvc.dsc
-		// offset_x: -dvc.layout.x
-		// offset_y: -dvc.layout.y
-	)
-	d.dd = dvc.layout.ui.svg
-	d.s.content = dvc.layout.ui.svg.s.content
+	d.s = vsvg.svg(width: w, height: h)
+	d.s.offset_x, d.s.offset_y = -dvc.layout.x, -dvc.layout.y
+	mut dds := d.dd
+	if mut dds is ui.DrawDeviceSVG {
+		dds.s = d.s
+	}
+
 	d.begin(dvc.layout.bg_color)
 
 	for s in dvc.shapes {
@@ -69,6 +51,7 @@ pub fn device_shape_drawviewer(filename string, dvc &DrawViewerComponent) {
 
 	d.end()
 	d.save(filename)
+	unsafe { d.s.free() }
 }
 
 // methods
@@ -93,19 +76,17 @@ pub fn (d &DeviceShapeSVG) save(filepath string) {
 
 pub fn (d &DeviceShapeSVG) rectangle(x f32, y f32, w f32, h f32, style string) {
 	mut s := d.s
-	s.rectangle(int(x) + d.offset_x, int(y) + d.offset_y, int(w), int(h), d.svg_params(style))
+	s.rectangle(int(x), int(y), int(w), int(h), d.svg_params(style))
 }
 
 pub fn (d &DeviceShapeSVG) rounded_rectangle(x f32, y f32, w f32, h f32, radius f32, style string) {
 	mut s := d.s
-	s.rectangle(int(x) + d.offset_x, int(y) + d.offset_y, int(w), int(h), d.svg_params(style,
-		radius: int(radius)))
+	s.rectangle(int(x), int(y), int(w), int(h), d.svg_params(style, radius: int(radius)))
 }
 
 pub fn (d &DeviceShapeSVG) line(x1 f32, y1 f32, x2 f32, y2 f32, style string) {
 	mut s := d.s
-	s.line(int(x1) + d.offset_x, int(y1) + d.offset_y, int(x2) + d.offset_x, int(y2) + d.offset_y,
-		d.svg_params(style))
+	s.line(int(x1), int(y1), int(x2), int(y2), d.svg_params(style))
 }
 
 pub fn (d &DeviceShapeSVG) uniform_segment_poly(x f32, y f32, radius f32, steps u32, style string) {
@@ -128,37 +109,37 @@ pub fn (d &DeviceShapeSVG) line_segment_poly(x f32, y f32, radius_x f32, radius_
 
 pub fn (d &DeviceShapeSVG) circle(x f32, y f32, radius f32, steps u32, style string) {
 	mut s := d.s
-	s.circle(int(x) + d.offset_x, int(y) + d.offset_y, int(radius), d.svg_params(style))
+	s.circle(int(x), int(y), int(radius), d.svg_params(style))
 }
 
 pub fn (d &DeviceShapeSVG) ellipse(x f32, y f32, radius_x f32, radius_y f32, steps u32, style string) {
 	mut s := d.s
-	s.ellipse(int(x) + d.offset_x, int(y) + d.offset_y, int(radius_x), int(radius_y),
-		d.svg_params(style))
+	s.ellipse(int(x), int(y), int(radius_x), int(radius_y), d.svg_params(style))
 }
 
 pub fn (d &DeviceShapeSVG) convex_poly(points []f32, offset_x f32, offset_y f32, style string) {
 	mut s := d.s
-	s.polygon('${points_str(points, offset_x, offset_y)}', d.svg_params(style))
+	s.polygon('${points_str(points, offset_x + s.offset_x, offset_y + s.offset_y)}', d.svg_params(style))
 }
 
 pub fn (d &DeviceShapeSVG) poly(points []f32, holes []int, offset_x f32, offset_y f32, style string) {
 	mut s := d.s
-	s.path('${path_with_holes(points, holes, offset_x, offset_y)}', d.svg_params(style))
+	s.path('${path_with_holes(points, holes, offset_x + s.offset_x, offset_y + s.offset_y)}',
+		d.svg_params(style))
 }
 
 pub fn (d &DeviceShapeSVG) arc(x f32, y f32, radius f32, start_angle_in_rad f32, angle_in_rad f32, style string) {
 	mut s := d.s
-	pg, pl := arc_str(x + d.offset_x, y + d.offset_y, radius, start_angle_in_rad, angle_in_rad)
+	pg, pl := arc_str(x + s.offset_x, y + s.offset_y, radius, start_angle_in_rad, angle_in_rad)
 	s.polygon(pg, d.svg_params(style, strokewidth: 0))
 	s.polyline(pl, d.svg_params(style, fill: 'none'))
 }
 
 pub fn (d &DeviceShapeSVG) triangle(x1 f32, y1 f32, x2 f32, y2 f32, x3 f32, y3 f32, style string) {
 	mut s := d.s
-	s.polygon('${int(x1) + d.offset_x},${int(y1) + d.offset_y} ${int(x2) + d.offset_x},${int(y2) +
-		d.offset_y} ${int(x3) + d.offset_x},${int(y3) + d.offset_y} ${int(x1) + d.offset_x},${
-		int(y1) + d.offset_y}', d.svg_params(style))
+	s.polygon('${int(x1) + s.offset_x},${int(y1) + s.offset_y} ${int(x2) + s.offset_x},${int(y2) +
+		s.offset_y} ${int(x3) + s.offset_x},${int(y3) + s.offset_y} ${int(x1) + s.offset_x},${
+		int(y1) + s.offset_y}', d.svg_params(style))
 }
 
 pub fn (d &DeviceShapeSVG) image(x f32, y f32, w f32, h f32, path string, style string) {
