@@ -97,7 +97,8 @@ pub fn (d &DeviceShapeSVG) rectangle(x f32, y f32, w f32, h f32, style string) {
 
 pub fn (d &DeviceShapeSVG) rounded_rectangle(x f32, y f32, w f32, h f32, radius f32, style string) {
 	mut s := d.s
-	s.rectangle(int(x) + d.offset_x, int(y) + d.offset_y, int(w), int(h), d.svg_params(style))
+	s.rectangle(int(x) + d.offset_x, int(y) + d.offset_y, int(w), int(h), d.svg_params(style,
+		radius: int(radius)))
 }
 
 pub fn (d &DeviceShapeSVG) line(x1 f32, y1 f32, x2 f32, y2 f32, style string) {
@@ -148,13 +149,18 @@ pub fn (d &DeviceShapeSVG) triangle(x1 f32, y1 f32, x2 f32, y2 f32, x3 f32, y3 f
 pub fn (d &DeviceShapeSVG) image(x f32, y f32, w f32, h f32, path string, style string) {
 }
 
-pub fn (d &DeviceShapeSVG) svg_params(style string) vsvg.Params {
+[params]
+struct SvgParamsParams {
+	radius int = -1
+}
+
+pub fn (d &DeviceShapeSVG) svg_params(style string, p SvgParamsParams) vsvg.Params {
 	sty := d.dsc.shape_style(style)
-	r := if sty.fill.has(.outline) { int(sty.radius) } else { 0 }
+	r := if p.radius > 0 { p.radius } else { 0 }
 	return vsvg.Params{
 		fill: if sty.fill.has(.solid) { shape_color(sty.colors.solid) } else { 'none' }
 		stroke: if sty.fill.has(.outline) { shape_color(sty.colors.outline) } else { 'none' }
-		strokewidth: r * 2
+		strokewidth: if sty.fill.has(.outline) { int(sty.radius) * 2 } else { 0 }
 		rx: r
 		ry: r
 	}
