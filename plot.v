@@ -53,7 +53,7 @@ pub struct PlotParams {
 }
 
 pub fn plot(p PlotParams) &Plot {
-	println(p.marg[.left])
+	// println(p.marg[.left])
 	mut xy := PlotCoordTransfrom{
 		x: p.x + p.marg[.left]
 		y: p.y + p.marg[.top]

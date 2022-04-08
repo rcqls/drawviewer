@@ -105,7 +105,7 @@ fn dv_init_alpha() C.sg_pipeline_desc {
 fn dv_key_down(e ui.KeyEvent, c &ui.CanvasLayout) {
 	mut dv := drawviewer_component(c)
 	if e.key == .up && ui.shift_key(e.mods) {
-		dv.dss.svg_screenshot_drawviewer('screenshot.svg', dv)
+		dv.svg_screenshot('screenshot.svg')
 	}
 }
 
@@ -125,4 +125,9 @@ fn dv_full_size(c &ui.CanvasLayout) (int, int) {
 	dvc := drawviewer_component(c)
 	b := shapes_bounds(dvc.shapes)
 	return int(dvc.layout.rel_pos_x(b.x) + b.width), int(dvc.layout.rel_pos_y(b.y) + b.height)
+}
+
+pub fn (dvc &DrawViewerComponent) svg_screenshot(filename string) {
+	mut d := dvc.dss
+	d.screenshot_drawviewer(filename, dvc)
 }

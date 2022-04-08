@@ -30,7 +30,7 @@ pub fn device_shape_svg(p DeviceShapeSVGParams) &DeviceShapeSVG {
 }
 
 [manualfree]
-pub fn (mut d DeviceShapeSVG) svg_screenshot_drawviewer(filename string, dvc &DrawViewerComponent) {
+pub fn (mut d DeviceShapeSVG) screenshot_drawviewer(filename string, dvc &DrawViewerComponent) {
 	// println("svg device $filename")
 	w, h := dvc.layout.adj_size()
 	d.s = vsvg.svg(width: w, height: h)
@@ -95,7 +95,8 @@ pub fn (d &DeviceShapeSVG) uniform_segment_poly(x f32, y f32, radius f32, steps 
 
 pub fn (d &DeviceShapeSVG) segment_poly(x f32, y f32, radius_x f32, radius_y f32, steps u32, style string) {
 	mut s := d.s
-	s.polygon(segment_poly_str(x, y, radius_x, radius_y, steps), d.svg_params(style))
+	s.polygon(segment_poly_str(x + s.offset_x, y + s.offset_y, radius_x, radius_y, steps),
+		d.svg_params(style))
 }
 
 pub fn (d &DeviceShapeSVG) uniform_line_segment_poly(x f32, y f32, radius f32, steps u32, style string) {
@@ -104,7 +105,8 @@ pub fn (d &DeviceShapeSVG) uniform_line_segment_poly(x f32, y f32, radius f32, s
 
 pub fn (d &DeviceShapeSVG) line_segment_poly(x f32, y f32, radius_x f32, radius_y f32, steps u32, style string) {
 	mut s := d.s
-	s.polyline(segment_poly_str(x, y, radius_x, radius_y, steps), d.svg_params(style))
+	s.polyline(segment_poly_str(x + s.offset_x, y + s.offset_y, radius_x, radius_y, steps),
+		d.svg_params(style))
 }
 
 pub fn (d &DeviceShapeSVG) circle(x f32, y f32, radius f32, steps u32, style string) {
