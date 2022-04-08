@@ -29,6 +29,13 @@ fn main() {
 		state: app
 		native_message: false
 		mode: .resizable
+		// on_init: fn(w &ui.Window) {
+		// 	dvc := dv.drawviewer_component_from_id(w, "plot")
+		// 	mut found, mut sh := dvc.plot("plot")
+		// 	println("plot $found")
+		// 	found, sh = dvc.plot("plot2")
+		// 	println("plot2 $found")
+		// }
 		children: [
 			ui.column(
 				heights: [ui.stretch, 3 * ui.stretch]

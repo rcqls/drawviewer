@@ -87,6 +87,10 @@ pub fn plot(p PlotParams) &Plot {
 	return pl
 }
 
+pub fn (s &Plot) full_size() (int, int) {
+	return s.width + s.marg[.left] + s.marg[.right], s.height + s.marg[.top] + s.marg[.bottom]
+}
+
 pub fn (s &Plot) draw(dv &DrawViewerComponent) {
 	s.draw_device(dv.dsc, dv)
 }

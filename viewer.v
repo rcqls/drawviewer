@@ -107,6 +107,9 @@ fn dv_key_down(e ui.KeyEvent, c &ui.CanvasLayout) {
 	if e.key == .up && ui.shift_key(e.mods) {
 		dv.svg_screenshot('screenshot.svg')
 	}
+	if e.key == .down && ui.shift_key(e.mods) {
+		dv.svg_screenshot_plot('screenshot-plot.svg', 'plot')
+	}
 }
 
 fn dv_draw(d ui.DrawDevice, c &ui.CanvasLayout, state voidptr) {
@@ -130,4 +133,23 @@ fn dv_full_size(c &ui.CanvasLayout) (int, int) {
 pub fn (dvc &DrawViewerComponent) svg_screenshot(filename string) {
 	mut d := dvc.dss
 	d.screenshot_drawviewer(filename, dvc)
+}
+
+pub fn (dvc &DrawViewerComponent) plot(id string) (bool, &Plot) {
+	for sh in dvc.shapes {
+		if sh is Plot {
+			if sh.id == id {
+				return true, sh
+			}
+		}
+	}
+	return false, plot()
+}
+
+pub fn (dvc &DrawViewerComponent) svg_screenshot_plot(filename string, id string) {
+	found, p := dvc.plot(id)
+	if found {
+		mut d := dvc.dss
+		d.screenshot_drawviewer_plot(filename, 0, 0, dvc, p)
+	}
 }

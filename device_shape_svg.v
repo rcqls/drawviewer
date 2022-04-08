@@ -1,6 +1,6 @@
 module drawviewer
 
-import vsvg
+import ui.libvg
 import larpon.sgldraw as draw
 import gx
 import ui
@@ -11,7 +11,7 @@ struct DeviceShapeSVG {
 mut:
 	dsc      &DeviceShapeContext = 0
 	dd       ui.DrawDevice       = ui.draw_device_print()
-	s        &vsvg.Svg = 0
+	s        &libvg.Svg = 0
 	offset_x int
 	offset_y int
 }
@@ -33,7 +33,7 @@ pub fn device_shape_svg(p DeviceShapeSVGParams) &DeviceShapeSVG {
 pub fn (mut d DeviceShapeSVG) screenshot_drawviewer(filename string, dvc &DrawViewerComponent) {
 	// println("svg device $filename")
 	w, h := dvc.layout.adj_size()
-	d.s = vsvg.svg(width: w, height: h)
+	d.s = libvg.svg(width: w, height: h)
 	d.s.offset_x, d.s.offset_y = -dvc.layout.x, -dvc.layout.y
 	mut dds := d.dd
 	if mut dds is ui.DrawDeviceSVG {
@@ -54,13 +54,34 @@ pub fn (mut d DeviceShapeSVG) screenshot_drawviewer(filename string, dvc &DrawVi
 	unsafe { d.s.free() }
 }
 
+[manualfree]
+pub fn (mut d DeviceShapeSVG) screenshot_drawviewer_plot(filename string, w int, h int, dvc &DrawViewerComponent, p &Plot) {
+	// wd, hd := dvc.layout.adj_size()
+	// println("svg device $filename")
+	wp, hp := p.full_size()
+	d.s = libvg.svg(width: wp, height: hp)
+	d.s.offset_x, d.s.offset_y = p.marg[.left] - p.x - dvc.layout.x, p.marg[.top] - p.y - dvc.layout.y
+	mut dds := d.dd
+	if mut dds is ui.DrawDeviceSVG {
+		dds.s = d.s
+	}
+
+	d.begin(dvc.layout.bg_color)
+
+	p.draw_device(d, dvc)
+
+	d.end()
+	d.save(filename)
+	unsafe { d.s.free() }
+}
+
 // methods
 
 pub fn (d &DeviceShapeSVG) begin(bg_color gx.Color) {
 	mut s := d.s
 	s.begin()
-	s.fill(vsvg.color(bg_color))
-	// s.rectangle(0, 0, d.s.width, d.s.height, vsvg.color(win_bg_color), 'none', 0, 0, 0)
+	s.fill(libvg.color(bg_color))
+	// s.rectangle(0, 0, d.s.width, d.s.height, libvg.color(win_bg_color), 'none', 0, 0, 0)
 }
 
 pub fn (d &DeviceShapeSVG) end() {
@@ -157,11 +178,11 @@ struct SvgParamsParams {
 	linejoin    string
 }
 
-pub fn (d &DeviceShapeSVG) svg_params(style string, p SvgParamsParams) vsvg.Params {
+pub fn (d &DeviceShapeSVG) svg_params(style string, p SvgParamsParams) libvg.Params {
 	sty := d.dsc.shape_style(style)
 	r := if p.radius > 0 { p.radius } else { 0 }
 	sw := if p.strokewidth >= 0 { p.strokewidth } else { int(sty.radius) * 2 }
-	return vsvg.Params{
+	return libvg.Params{
 		fill: if p.fill.len > 0 {
 			p.fill
 		} else if sty.fill.has(.solid) {
@@ -201,7 +222,7 @@ pub fn (d &DeviceShapeSVG) svg_params(style string, p SvgParamsParams) vsvg.Para
 }
 
 pub fn shape_color(c draw.Color) string {
-	return vsvg.rgba(c.r, c.g, c.b, c.a)
+	return libvg.rgba(c.r, c.g, c.b, c.a)
 }
 
 pub fn points_str(points []f32, offset_x f32, offset_y f32) string {
