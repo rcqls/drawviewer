@@ -40,7 +40,7 @@ pub fn (mut d DeviceShapeSVG) screenshot_drawviewer(filename string, dvc &DrawVi
 		dds.s = d.s
 	}
 
-	d.begin(dvc.layout.bg_color)
+	d.begin(dvc.layout.style.bg_color)
 
 	for s in dvc.shapes {
 		s.draw_device(d, dvc)
@@ -66,7 +66,7 @@ pub fn (mut d DeviceShapeSVG) screenshot_drawviewer_plot(filename string, w int,
 		dds.s = d.s
 	}
 
-	d.begin(dvc.layout.bg_color)
+	d.begin(dvc.layout.style.bg_color)
 
 	p.draw_device(d, dvc)
 
@@ -80,8 +80,8 @@ pub fn (mut d DeviceShapeSVG) screenshot_drawviewer_plot(filename string, w int,
 pub fn (d &DeviceShapeSVG) begin(bg_color gx.Color) {
 	mut s := d.s
 	s.begin()
-	s.fill(libvg.color(bg_color))
-	// s.rectangle(0, 0, d.s.width, d.s.height, libvg.color(win_bg_color), 'none', 0, 0, 0)
+	s.fill(ui.hex_color(bg_color))
+	// s.rectangle(0, 0, d.s.width, d.s.height, ui.hex_color(win_bg_color), 'none', 0, 0, 0)
 }
 
 pub fn (d &DeviceShapeSVG) end() {
@@ -222,7 +222,7 @@ pub fn (d &DeviceShapeSVG) svg_params(style string, p SvgParamsParams) libvg.Par
 }
 
 pub fn shape_color(c draw.Color) string {
-	return libvg.rgba(c.r, c.g, c.b, c.a)
+	return ui.hex_rgba(c.r, c.g, c.b, c.a)
 }
 
 pub fn points_str(points []f32, offset_x f32, offset_y f32) string {
