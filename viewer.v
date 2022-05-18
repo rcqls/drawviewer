@@ -102,7 +102,7 @@ fn dv_init_alpha() C.sg_pipeline_desc {
 	return pipdesc
 }
 
-fn dv_key_down(e ui.KeyEvent, c &ui.CanvasLayout) {
+fn dv_key_down(c &ui.CanvasLayout, e ui.KeyEvent) {
 	mut dv := drawviewer_component(c)
 	if e.key == .up && ui.shift_key(e.mods) {
 		dv.svg_screenshot('screenshot.svg')
@@ -112,7 +112,7 @@ fn dv_key_down(e ui.KeyEvent, c &ui.CanvasLayout) {
 	}
 }
 
-fn dv_draw(d ui.DrawDevice, c &ui.CanvasLayout, state voidptr) {
+fn dv_draw(d ui.DrawDevice, c &ui.CanvasLayout) {
 	dvc := drawviewer_component(c)
 	// println("dv_draw $c.id $c.x, $c.y $dvc.layout.x, $dvc.layout.y")
 	sgl.load_pipeline(dvc.alpha_pip)
